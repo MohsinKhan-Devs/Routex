@@ -54,29 +54,18 @@ Use these accounts after running the seed script:
 
 From the project root:
 
-```bash
-mvn clean package
-mvn javafx:run
+```bash to compile
+C:\Program Files\maven-mvnd-2.0.0-rc-3-windows-amd64\bin\mvnd.cmd" clean package
 ```
 
-If `mvn` is not recognized on Windows, Maven is not installed or not added to PATH. Install Apache Maven, then add its `bin` folder to your PATH and reopen the terminal. You can also run the project from IntelliJ IDEA or VS Code using `com.routex.Main` as the entry point.
-
-If Maven is installed but not on PATH, you can run it with the full path to `mvn.cmd`, for example:
 
 ```powershell
-C:\apache-maven-3.9.9\bin\mvn.cmd clean package
-C:\apache-maven-3.9.9\bin\mvn.cmd javafx:run
+java "-Djava.library.path=." `
+-p "C:\Users\Mohsin Khan\.m2\repository\org\openjfx\javafx-controls\21.0.1\javafx-controls-21.0.1-win.jar;C:\Users\Mohsin Khan\.m2\repository\org\openjfx\javafx-graphics\21.0.1\javafx-graphics-21.0.1-win.jar;C:\Users\Mohsin Khan\.m2\repository\org\openjfx\javafx-fxml\21.0.1\javafx-fxml-21.0.1-win.jar;C:\Users\Mohsin Khan\.m2\repository\org\openjfx\javafx-base\21.0.1\javafx-base-21.0.1-win.jar" `
+--add-modules javafx.controls,javafx.fxml `
+-cp "target\routex-1.0.0.jar;C:\Users\Mohsin Khan\.m2\repository\com\microsoft\sqlserver\mssql-jdbc\13.4.0.jre11\mssql-jdbc-13.4.0.jre11.jar" `
+com.routex.Main
 ```
-
-If you are using Maven Daemon, the command file is usually `mvnd.cmd`. With your path, run:
-
-```powershell
-"C:\Program Files\maven-mvnd-2.0.0-rc-3-windows-amd64\bin\mvnd.cmd" clean package
-"C:\Program Files\maven-mvnd-2.0.0-rc-3-windows-amd64\bin\mvnd.cmd" javafx:run
-```
-
-If you prefer running the compiled jar or launching from an IDE, use `com.routex.Main` as the entry point.
-
 ## Project Structure
 
 - `src/main/java/com/routex/Main.java` - JavaFX application entry point
