@@ -1,0 +1,11 @@
+Compile (run in project root):
+
+"C:\Program Files\maven-mvnd-2.0.0-rc-3-windows-amd64\bin\mvnd.cmd" clean package
+
+Run (in PowerShell):
+
+java "-Djava.library.path=." `
+-p "C:\Users\Mohsin Khan\.m2\repository\org\openjfx\javafx-controls\21.0.1\javafx-controls-21.0.1-win.jar;C:\Users\Mohsin Khan\.m2\repository\org\openjfx\javafx-graphics\21.0.1\javafx-graphics-21.0.1-win.jar;C:\Users\Mohsin Khan\.m2\repository\org\openjfx\javafx-fxml\21.0.1\javafx-fxml-21.0.1-win.jar;C:\Users\Mohsin Khan\.m2\repository\org\openjfx\javafx-base\21.0.1\javafx-base-21.0.1-win.jar" `
+--add-modules javafx.controls,javafx.fxml `
+-cp "target\routex-1.0.0.jar;C:\Users\Mohsin Khan\.m2\repository\com\microsoft\sqlserver\mssql-jdbc\13.4.0.jre11\mssql-jdbc-13.4.0.jre11.jar" `
+com.routex.Main
