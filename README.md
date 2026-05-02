@@ -82,3 +82,13 @@ com.routex.Main
 - The application uses a single integrated dashboard for all selected use cases.
 - Audit logging is handled through the database layer.
 - Passwords are stored as SHA-256 hashes in the seed data.
+
+
+## Troubleshooting: Stopping the Application
+
+If you find that the application is still running in the background or you are unable to delete/move the project folder because "a file is in use," follow these steps:
+
+### 1. Force Stop via PowerShell (Windows)
+Run this command to immediately terminate all active Java processes:
+```powershell
+Stop-Process -Name "java" -Force
