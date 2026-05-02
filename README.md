@@ -55,7 +55,7 @@ Use these accounts after running the seed script:
 From the project root:
 
 ```bash to compile
-C:\Program Files\maven-mvnd-2.0.0-rc-3-windows-amd64\bin\mvnd.cmd" clean package
+"C:\Program Files\maven-mvnd-2.0.0-rc-3-windows-amd64\bin\mvnd.cmd" clean package
 ```
 
 
