@@ -634,6 +634,11 @@
     -fx-font-size: 12.5px;
 }
 
+.info-text {
+    -fx-text-fill: #b0ccee;
+    -fx-font-size: 13.5px;
+}
+
 .hint-text   { -fx-font-style: italic; }
 .footer-text { -fx-font-size: 12px; }
 

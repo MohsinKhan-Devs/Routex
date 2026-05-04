@@ -183,7 +183,11 @@ public class RouteXDashboard {
         title.getStyleClass().add("section-title");
 
         Label role = new Label("Role: " + currentUser.getRole().getDisplayName());
+        role.getStyleClass().add("info-text"); // Added visibility class
+        
         Label status = new Label("Account status: " + currentUser.getStatus());
+        status.getStyleClass().add("info-text"); // Added visibility class
+        
         Label note = new Label("Use the dashboard workspace to manage your assigned operational tasks.");
         note.setWrapText(true);
         note.getStyleClass().add("muted-text");
