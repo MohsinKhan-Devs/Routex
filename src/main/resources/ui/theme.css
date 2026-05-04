@@ -866,3 +866,64 @@
 .radio-button:selected .radio { -fx-background-color: linear-gradient(to bottom right, #0080ff, #0050c0); -fx-border-color: rgba(0,180,255,0.60); }
 .radio-button:selected .dot   { -fx-background-color: white; }
 .radio-button .label { -fx-text-fill: #90b0d8; }
+
+/* ─── DIALOGS (Alerts, Prompts, Confirmations) ──────────────────── */
+.dialog-pane {
+    -fx-background-color: linear-gradient(to bottom right, #07121f 0%, #030a16 100%);
+    -fx-border-color: rgba(0,180,255,0.2);
+    -fx-border-width: 1;
+}
+
+.dialog-pane > .header-panel {
+    -fx-background-color: rgba(10,22,48,0.8);
+    -fx-border-color: rgba(0,150,255,0.15);
+    -fx-border-width: 0 0 1 0;
+    -fx-padding: 15;
+}
+
+.dialog-pane > .header-panel .label {
+    -fx-text-fill: #e8f4ff;
+    -fx-font-size: 16px;
+    -fx-font-weight: 700;
+}
+
+.dialog-pane .content {
+    -fx-padding: 20;
+}
+
+.dialog-pane .content .label {
+    -fx-text-fill: #b0ccee;
+}
+
+.dialog-pane .button-bar {
+    -fx-padding: 15;
+}
+
+.dialog-pane .button {
+    -fx-background-color: rgba(18,36,72,0.70);
+    -fx-text-fill: #9ab8e0;
+    -fx-border-color: rgba(70,120,200,0.28);
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+    -fx-border-width: 1;
+    -fx-cursor: hand;
+    -fx-padding: 8 20 8 20;
+    -fx-font-weight: 600;
+}
+
+.dialog-pane .button:hover {
+    -fx-background-color: rgba(25,50,100,0.80);
+    -fx-text-fill: #c4daff;
+    -fx-border-color: rgba(80,150,255,0.45);
+}
+
+.dialog-pane .button:default {
+    -fx-background-color: linear-gradient(to right, #1a6eff, #0050d0);
+    -fx-text-fill: #f0f9ff;
+    -fx-border-color: rgba(80,160,255,0.40);
+}
+
+.dialog-pane .button:default:hover {
+    -fx-background-color: linear-gradient(to right, #2a80ff, #0060e0);
+    -fx-border-color: rgba(0,200,255,0.60);
+}

@@ -9,14 +9,14 @@ import com.routex.model.Shipment;
 import com.routex.model.ShipmentOrder;
 import com.routex.model.User;
 import com.routex.model.Vehicle;
-import com.routex.model.VehicleIssue;
-import com.routex.model.Warehouse;
 import com.routex.service.AuthService;
 import com.routex.service.InventoryService;
 import com.routex.service.ShipmentOrderService;
 import com.routex.service.ShipmentService;
 import com.routex.service.UserManagementService;
 import com.routex.service.VehicleService;
+import javafx.beans.property.SimpleStringProperty;
+import javafx.collections.FXCollections;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
@@ -26,12 +26,21 @@ import javafx.scene.control.Button;
 import javafx.scene.control.ChoiceDialog;
 import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
+import javafx.scene.control.SelectionMode;
 import javafx.scene.control.Separator;
 import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
-import javafx.scene.control.TextArea;
+import javafx.scene.control.TableColumn;
+import javafx.scene.control.TablePosition;
+import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
+import javafx.scene.input.Clipboard;
+import javafx.scene.input.ClipboardContent;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyCodeCombination;
+import javafx.scene.input.KeyCombination;
 import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
@@ -75,7 +84,7 @@ public class RouteXDashboard {
     private void showLoginView() {
         root.setTop(buildPublicHeader());
         root.setLeft(null);
-        root.setBottom(buildFooter("Please authenticate to access the RouteX control center."));
+        root.setBottom(buildFooter("RouteX Control Center - Secure Access"));
         root.setCenter(buildLoginCard());
     }
 
@@ -102,7 +111,7 @@ public class RouteXDashboard {
         Label title = new Label("Sign in");
         title.getStyleClass().add("section-title");
 
-        Label info = new Label("Use a seeded account to enter the system.");
+        Label info = new Label("Please enter your credentials to continue.");
         info.getStyleClass().add("muted-text");
         info.setWrapText(true);
 
@@ -117,19 +126,8 @@ public class RouteXDashboard {
         loginButton.setOnAction(e -> attemptLogin(emailField.getText(), passwordField.getText()));
 
         VBox.setVgrow(loginButton, javafx.scene.layout.Priority.NEVER);
-        card.getChildren().addAll(title, info, emailField, passwordField, loginButton, seedHintBox());
+        card.getChildren().addAll(title, info, emailField, passwordField, loginButton);
         return new StackPane(card);
-    }
-
-    private Node seedHintBox() {
-        VBox box = new VBox(4);
-        box.getStyleClass().add("hint-box");
-        Label heading = new Label("Seed accounts");
-        heading.getStyleClass().add("hint-title");
-        Label body = new Label("Admin: s.jenkins@routex.com / Admin@123\nManager: m.thorne@routex.com / Manager@123\nDispatcher: e.rodriguez@routex.com / Dispatcher@123\nDriver: j.howlett@routex.com / Driver1@123");
-        body.getStyleClass().add("hint-text");
-        box.getChildren().addAll(heading, body);
-        return box;
     }
 
     private void attemptLogin(String email, String password) {
@@ -145,7 +143,7 @@ public class RouteXDashboard {
         root.setTop(buildDashboardHeader());
         root.setLeft(buildSideInfo());
         root.setCenter(buildRoleTabs());
-        root.setBottom(buildFooter("Role-based access is active for " + currentUser.getRole().getDisplayName() + "."));
+        root.setBottom(buildFooter("Session Active: " + currentUser.getRole().getDisplayName() + " Access Level"));
     }
 
     private Node buildDashboardHeader() {
@@ -186,7 +184,7 @@ public class RouteXDashboard {
 
         Label role = new Label("Role: " + currentUser.getRole().getDisplayName());
         Label status = new Label("Account status: " + currentUser.getStatus());
-        Label note = new Label("This single dashboard contains every use case assigned to your group, with the service and DAO layers handling all persistence.");
+        Label note = new Label("Use the dashboard workspace to manage your assigned operational tasks.");
         note.setWrapText(true);
         note.getStyleClass().add("muted-text");
 
@@ -231,35 +229,46 @@ public class RouteXDashboard {
         Label title = new Label("Welcome to RouteX");
         title.getStyleClass().add("section-title");
 
-        Label body = new Label("Use the tabs below to work with the business functions mapped to your role. The application follows a 3-tier structure: JavaFX presentation, Java service logic, and SQL Server DAOs.");
+        Label body = new Label("Navigate through the tabs to access your specific module functions and daily operations.");
         body.setWrapText(true);
         body.getStyleClass().add("muted-text");
 
-        TextArea output = new TextArea();
-        output.setEditable(false);
-        output.getStyleClass().add("output-area");
-        output.setPrefRowCount(14);
-        refreshHomeSummary(output);
+        GridPane statsGrid = new GridPane();
+        statsGrid.setHgap(40);
+        statsGrid.setVgap(15);
+        statsGrid.setPadding(new Insets(20));
+        statsGrid.getStyleClass().add("stat-card");
+
+        refreshHomeStats(statsGrid);
 
         Button refresh = new Button("Refresh Summary");
         refresh.getStyleClass().add("primary-button");
-        refresh.setOnAction(e -> refreshHomeSummary(output));
+        refresh.setOnAction(e -> refreshHomeStats(statsGrid));
 
-        box.getChildren().addAll(title, body, refresh, output);
+        box.getChildren().addAll(title, body, refresh, statsGrid);
         return box;
     }
 
-    private void refreshHomeSummary(TextArea output) {
-        StringBuilder sb = new StringBuilder();
-        sb.append("User: ").append(currentUser.getName()).append('\n');
-        sb.append("Role: ").append(currentUser.getRole().getDisplayName()).append('\n');
-        sb.append("\nCounts\n");
-        sb.append("Users: ").append(userManagementService.getAllUsers().size()).append('\n');
-        sb.append("Inventory items: ").append(inventoryService.getAllItems().size()).append('\n');
-        sb.append("Shipment orders: ").append(shipmentOrderService.getAllOrders().size()).append('\n');
-        sb.append("Vehicles: ").append(vehicleService.getAllVehicles().size()).append('\n');
-        sb.append("Shipments: ").append(shipmentService.getAllShipments().size()).append('\n');
-        output.setText(sb.toString());
+    private void refreshHomeStats(GridPane grid) {
+        grid.getChildren().clear();
+
+        addStatRow(grid, 0, "Current User", currentUser.getName());
+        addStatRow(grid, 1, "Role", currentUser.getRole().getDisplayName());
+
+        addStatRow(grid, 3, "Total Users", String.valueOf(userManagementService.getAllUsers().size()));
+        addStatRow(grid, 4, "Inventory Items", String.valueOf(inventoryService.getAllItems().size()));
+        addStatRow(grid, 5, "Shipment Orders", String.valueOf(shipmentOrderService.getAllOrders().size()));
+        addStatRow(grid, 6, "Total Vehicles", String.valueOf(vehicleService.getAllVehicles().size()));
+        addStatRow(grid, 7, "Total Shipments", String.valueOf(shipmentService.getAllShipments().size()));
+    }
+
+    private void addStatRow(GridPane grid, int row, String labelText, String valueText) {
+        Label label = new Label(labelText);
+        label.getStyleClass().add("muted-text");
+        Label value = new Label(valueText);
+        value.getStyleClass().add("value-text");
+        grid.add(label, 0, row);
+        grid.add(value, 1, row);
     }
 
     private Node buildUsersTab() {
@@ -267,29 +276,28 @@ public class RouteXDashboard {
         box.getStyleClass().add("tab-body");
         box.setPadding(new Insets(22));
 
-        Label title = new Label("UC11 - Manage User Accounts");
+        Label title = new Label("Manage User Accounts");
         title.getStyleClass().add("section-title");
 
+        TableView<User> table = createUserTable();
+        javafx.scene.layout.VBox.setVgrow(table, javafx.scene.layout.Priority.ALWAYS);
+
+        Runnable refreshTable = () -> table.setItems(FXCollections.observableArrayList(userManagementService.getAllUsers()));
+
         HBox actions = new HBox(10,
-            actionButton("List", e -> showUsers()),
-            actionButton("Create", e -> createUser()),
-            actionButton("Update", e -> updateUser()),
-            actionButton("Deactivate", e -> deactivateUser()),
-            actionButton("Delete", e -> deleteUser())
+            actionButton("Create", e -> { createUser(); refreshTable.run(); }),
+            actionButton("Update", e -> { updateUser(); refreshTable.run(); }),
+            actionButton("Deactivate", e -> { deactivateUser(); refreshTable.run(); }),
+            actionButton("Delete", e -> { deleteUser(); refreshTable.run(); })
         );
-        TextArea output = new TextArea();
-        output.setEditable(false);
-        output.getStyleClass().add("output-area");
-        output.setPrefRowCount(18);
 
-        Button refresh = new Button("Refresh");
+        Button refresh = new Button("Refresh Data");
         refresh.getStyleClass().add("secondary-button");
-        refresh.setOnAction(e -> output.setText(formatUsers(userManagementService.getAllUsers())));
-
+        refresh.setOnAction(e -> refreshTable.run());
         actions.getChildren().add(refresh);
-        box.getChildren().addAll(title, actions, output);
-        output.setText(formatUsers(userManagementService.getAllUsers()));
-        bindOutputContext(actions, output);
+
+        refreshTable.run();
+        box.getChildren().addAll(title, actions, table);
         return box;
     }
 
@@ -298,28 +306,37 @@ public class RouteXDashboard {
         box.getStyleClass().add("tab-body");
         box.setPadding(new Insets(22));
 
-        Label title = new Label("UC02 - Manage Inventory Stock");
+        Label title = new Label("Manage Inventory Stock");
         title.getStyleClass().add("section-title");
 
-        HBox actions = new HBox(10,
-            actionButton("List", e -> {}),
-            actionButton("Add", e -> addInventoryItem()),
-            actionButton("Update", e -> updateInventoryItem()),
-            actionButton("Remove", e -> removeInventoryItem()),
-            actionButton("Below Threshold", e -> {})
-        );
-        TextArea output = new TextArea();
-        output.setEditable(false);
-        output.getStyleClass().add("output-area");
-        output.setPrefRowCount(18);
+        TableView<InventoryItem> table = createInventoryTable();
+        javafx.scene.layout.VBox.setVgrow(table, javafx.scene.layout.Priority.ALWAYS);
 
-        Button refresh = new Button("Refresh");
+        javafx.beans.property.BooleanProperty showingAll = new javafx.beans.property.SimpleBooleanProperty(true);
+
+        Runnable refreshTable = () -> {
+            if (showingAll.get()) {
+                table.setItems(FXCollections.observableArrayList(inventoryService.getAllItems()));
+            } else {
+                table.setItems(FXCollections.observableArrayList(inventoryService.getItemsBelowThreshold()));
+            }
+        };
+
+        HBox actions = new HBox(10,
+            actionButton("List All", e -> { showingAll.set(true); refreshTable.run(); }),
+            actionButton("Add", e -> { addInventoryItem(); refreshTable.run(); }),
+            actionButton("Update", e -> { updateInventoryItem(); refreshTable.run(); }),
+            actionButton("Remove", e -> { removeInventoryItem(); refreshTable.run(); }),
+            actionButton("Below Threshold", e -> { showingAll.set(false); refreshTable.run(); })
+        );
+
+        Button refresh = new Button("Refresh Data");
         refresh.getStyleClass().add("secondary-button");
-        refresh.setOnAction(e -> output.setText(formatInventory(inventoryService.getAllItems())));
+        refresh.setOnAction(e -> refreshTable.run());
         actions.getChildren().add(refresh);
-        box.getChildren().addAll(title, actions, output);
-        output.setText(formatInventory(inventoryService.getAllItems()));
-        bindOutputContext(actions, output);
+
+        refreshTable.run();
+        box.getChildren().addAll(title, actions, table);
         return box;
     }
 
@@ -328,29 +345,38 @@ public class RouteXDashboard {
         box.getStyleClass().add("tab-body");
         box.setPadding(new Insets(22));
 
-        Label title = new Label("UC04 / UC05 - Shipment Orders");
+        Label title = new Label("Shipment Orders");
         title.getStyleClass().add("section-title");
 
-        HBox actions = new HBox(10,
-            actionButton("List Pending", e -> {}),
-            actionButton("List Approved", e -> {}),
-            actionButton("Generate Manual", e -> generateManualOrder()),
-            actionButton("Auto Generate", e -> autoGenerateOrders()),
-            actionButton("Approve", e -> approveOrder()),
-            actionButton("Reject", e -> rejectOrder())
-        );
-        TextArea output = new TextArea();
-        output.setEditable(false);
-        output.getStyleClass().add("output-area");
-        output.setPrefRowCount(18);
+        TableView<ShipmentOrder> table = createOrderTable();
+        javafx.scene.layout.VBox.setVgrow(table, javafx.scene.layout.Priority.ALWAYS);
 
-        Button refresh = new Button("Refresh");
+        javafx.beans.property.BooleanProperty showingPending = new javafx.beans.property.SimpleBooleanProperty(true);
+
+        Runnable refreshTable = () -> {
+            if (showingPending.get()) {
+                table.setItems(FXCollections.observableArrayList(shipmentOrderService.getPendingOrders()));
+            } else {
+                table.setItems(FXCollections.observableArrayList(shipmentOrderService.getApprovedOrders()));
+            }
+        };
+
+        HBox actions = new HBox(10,
+            actionButton("List Pending", e -> { showingPending.set(true); refreshTable.run(); }),
+            actionButton("List Approved", e -> { showingPending.set(false); refreshTable.run(); }),
+            actionButton("Generate Manual", e -> { generateManualOrder(); refreshTable.run(); }),
+            actionButton("Auto Generate", e -> { autoGenerateOrders(); refreshTable.run(); }),
+            actionButton("Approve", e -> { approveOrder(); refreshTable.run(); }),
+            actionButton("Reject", e -> { rejectOrder(); refreshTable.run(); })
+        );
+
+        Button refresh = new Button("Refresh Data");
         refresh.getStyleClass().add("secondary-button");
-        refresh.setOnAction(e -> output.setText(formatOrders(shipmentOrderService.getAllOrders())));
+        refresh.setOnAction(e -> refreshTable.run());
         actions.getChildren().add(refresh);
-        box.getChildren().addAll(title, actions, output);
-        output.setText(formatOrders(shipmentOrderService.getAllOrders()));
-        bindOutputContext(actions, output);
+
+        refreshTable.run();
+        box.getChildren().addAll(title, actions, table);
         return box;
     }
 
@@ -359,27 +385,56 @@ public class RouteXDashboard {
         box.getStyleClass().add("tab-body");
         box.setPadding(new Insets(22));
 
-        Label title = new Label("UC06 - Assign Vehicle to Shipment");
+        Label title = new Label("Dispatch & Fleet Management");
         title.getStyleClass().add("section-title");
 
-        HBox actions = new HBox(10,
-            actionButton("Approved Orders", e -> {}),
-            actionButton("Vehicles", e -> {}),
-            actionButton("Assign Vehicle", e -> assignVehicle()),
-            actionButton("Shipments", e -> {})
-        );
-        TextArea output = new TextArea();
-        output.setEditable(false);
-        output.getStyleClass().add("output-area");
-        output.setPrefRowCount(18);
+        StackPane tableContainer = new StackPane();
+        javafx.scene.layout.VBox.setVgrow(tableContainer, javafx.scene.layout.Priority.ALWAYS);
 
-        Button refresh = new Button("Refresh");
+        TableView<ShipmentOrder> orderTable = createOrderTable();
+        TableView<Vehicle> vehicleTable = createVehicleTable();
+        TableView<Shipment> shipmentTable = createShipmentTable();
+
+        javafx.beans.property.ObjectProperty<TableView<?>> currentView = new javafx.beans.property.SimpleObjectProperty<>(orderTable);
+
+        Runnable refreshCurrent = () -> {
+            if (currentView.get() == orderTable) {
+                orderTable.setItems(FXCollections.observableArrayList(shipmentOrderService.getApprovedOrders()));
+            } else if (currentView.get() == vehicleTable) {
+                vehicleTable.setItems(FXCollections.observableArrayList(vehicleService.getAllVehicles()));
+            } else if (currentView.get() == shipmentTable) {
+                shipmentTable.setItems(FXCollections.observableArrayList(shipmentService.getAllShipments()));
+            }
+        };
+
+        HBox actions = new HBox(10,
+            actionButton("Approved Orders", e -> {
+                currentView.set(orderTable);
+                refreshCurrent.run();
+                tableContainer.getChildren().setAll(orderTable);
+            }),
+            actionButton("Vehicles", e -> {
+                currentView.set(vehicleTable);
+                refreshCurrent.run();
+                tableContainer.getChildren().setAll(vehicleTable);
+            }),
+            actionButton("Assign Vehicle", e -> { assignVehicle(); refreshCurrent.run(); }),
+            actionButton("Shipments", e -> {
+                currentView.set(shipmentTable);
+                refreshCurrent.run();
+                tableContainer.getChildren().setAll(shipmentTable);
+            })
+        );
+
+        Button refresh = new Button("Refresh View");
         refresh.getStyleClass().add("secondary-button");
-        refresh.setOnAction(e -> output.setText(formatDispatchSnapshot()));
+        refresh.setOnAction(e -> refreshCurrent.run());
         actions.getChildren().add(refresh);
-        box.getChildren().addAll(title, actions, output);
-        output.setText(formatDispatchSnapshot());
-        bindOutputContext(actions, output);
+
+        refreshCurrent.run();
+        tableContainer.getChildren().setAll(currentView.get());
+
+        box.getChildren().addAll(title, actions, tableContainer);
         return box;
     }
 
@@ -388,27 +443,208 @@ public class RouteXDashboard {
         box.getStyleClass().add("tab-body");
         box.setPadding(new Insets(22));
 
-        Label title = new Label("UC09 / UC10 - Driver Operations");
+        Label title = new Label("Driver Operations");
         title.getStyleClass().add("section-title");
 
-        HBox actions = new HBox(10,
-            actionButton("My Shipments", e -> {}),
-            actionButton("Update Status", e -> updateDeliveryStatus()),
-            actionButton("Report Issue", e -> reportVehicleIssue())
-        );
-        TextArea output = new TextArea();
-        output.setEditable(false);
-        output.getStyleClass().add("output-area");
-        output.setPrefRowCount(18);
+        TableView<Shipment> table = createShipmentTable();
+        javafx.scene.layout.VBox.setVgrow(table, javafx.scene.layout.Priority.ALWAYS);
 
-        Button refresh = new Button("Refresh");
+        Runnable refreshTable = () -> table.setItems(FXCollections.observableArrayList(shipmentService.getShipmentsForDriver(currentUser.getUserId())));
+
+        HBox actions = new HBox(10,
+            actionButton("Update Status", e -> { updateDeliveryStatus(); refreshTable.run(); }),
+            actionButton("Report Issue", e -> { reportVehicleIssue(); refreshTable.run(); })
+        );
+
+        Button refresh = new Button("Refresh Assignments");
         refresh.getStyleClass().add("secondary-button");
-        refresh.setOnAction(e -> output.setText(formatDriverSnapshot()));
+        refresh.setOnAction(e -> refreshTable.run());
         actions.getChildren().add(refresh);
-        box.getChildren().addAll(title, actions, output);
-        output.setText(formatDriverSnapshot());
-        bindOutputContext(actions, output);
+
+        refreshTable.run();
+        box.getChildren().addAll(title, actions, table);
         return box;
+    }
+
+    // --- TABLE GENERATION METHODS ---
+
+    private TableView<User> createUserTable() {
+        TableView<User> table = new TableView<>();
+        table.getStyleClass().add("inventory-table");
+        table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+
+        TableColumn<User, String> idCol = new TableColumn<>("User ID");
+        idCol.setCellValueFactory(d -> new SimpleStringProperty(d.getValue().getUserId()));
+        idCol.getStyleClass().add("uuid-cell");
+
+        TableColumn<User, String> nameCol = new TableColumn<>("Name");
+        nameCol.setCellValueFactory(d -> new SimpleStringProperty(d.getValue().getName()));
+        nameCol.getStyleClass().add("name-cell");
+
+        TableColumn<User, String> emailCol = new TableColumn<>("Email");
+        emailCol.setCellValueFactory(d -> new SimpleStringProperty(d.getValue().getEmail()));
+
+        TableColumn<User, String> roleCol = new TableColumn<>("Role");
+        roleCol.setCellValueFactory(d -> new SimpleStringProperty(d.getValue().getRole().toString()));
+
+        TableColumn<User, String> statusCol = new TableColumn<>("Status");
+        statusCol.setCellValueFactory(d -> new SimpleStringProperty(d.getValue().getStatus().toString()));
+
+        table.getColumns().addAll(idCol, nameCol, emailCol, roleCol, statusCol);
+        installCopyPasteHandler(table);
+        return table;
+    }
+
+    private TableView<InventoryItem> createInventoryTable() {
+        TableView<InventoryItem> table = new TableView<>();
+        table.getStyleClass().add("inventory-table");
+        table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+
+        TableColumn<InventoryItem, String> idCol = new TableColumn<>("Item ID");
+        idCol.setCellValueFactory(d -> new SimpleStringProperty(d.getValue().getItemId()));
+        idCol.getStyleClass().add("uuid-cell");
+
+        TableColumn<InventoryItem, String> skuCol = new TableColumn<>("SKU");
+        skuCol.setCellValueFactory(d -> new SimpleStringProperty(d.getValue().getSku()));
+        skuCol.getStyleClass().add("sku-cell");
+
+        TableColumn<InventoryItem, String> nameCol = new TableColumn<>("Name");
+        nameCol.setCellValueFactory(d -> new SimpleStringProperty(d.getValue().getName()));
+        nameCol.getStyleClass().add("name-cell");
+
+        TableColumn<InventoryItem, String> qtyCol = new TableColumn<>("Qty");
+        qtyCol.setCellValueFactory(d -> new SimpleStringProperty(String.valueOf(d.getValue().getQuantity())));
+        qtyCol.getStyleClass().add("qty-cell");
+
+        TableColumn<InventoryItem, String> threshCol = new TableColumn<>("Threshold");
+        threshCol.setCellValueFactory(d -> new SimpleStringProperty(String.valueOf(d.getValue().getReorderThreshold())));
+        threshCol.getStyleClass().add("threshold-cell");
+
+        TableColumn<InventoryItem, String> whCol = new TableColumn<>("Warehouse");
+        whCol.setCellValueFactory(d -> new SimpleStringProperty(d.getValue().getWarehouseName()));
+        whCol.getStyleClass().add("warehouse-cell");
+
+        table.getColumns().addAll(idCol, skuCol, nameCol, qtyCol, threshCol, whCol);
+        installCopyPasteHandler(table);
+        return table;
+    }
+
+    private TableView<ShipmentOrder> createOrderTable() {
+        TableView<ShipmentOrder> table = new TableView<>();
+        table.getStyleClass().add("inventory-table");
+        table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+
+        TableColumn<ShipmentOrder, String> idCol = new TableColumn<>("Order ID");
+        idCol.setCellValueFactory(d -> new SimpleStringProperty(d.getValue().getOrderId()));
+        idCol.getStyleClass().add("uuid-cell");
+
+        TableColumn<ShipmentOrder, String> itemCol = new TableColumn<>("Item Name");
+        itemCol.setCellValueFactory(d -> new SimpleStringProperty(d.getValue().getItemName()));
+        itemCol.getStyleClass().add("name-cell");
+
+        TableColumn<ShipmentOrder, String> qtyCol = new TableColumn<>("Req Qty");
+        qtyCol.setCellValueFactory(d -> new SimpleStringProperty(String.valueOf(d.getValue().getRequiredQty())));
+        qtyCol.getStyleClass().add("qty-cell");
+
+        TableColumn<ShipmentOrder, String> prioCol = new TableColumn<>("Priority");
+        prioCol.setCellValueFactory(d -> new SimpleStringProperty(d.getValue().getPriority().toString()));
+
+        TableColumn<ShipmentOrder, String> statusCol = new TableColumn<>("Status");
+        statusCol.setCellValueFactory(d -> new SimpleStringProperty(d.getValue().getStatus().toString()));
+
+        table.getColumns().addAll(idCol, itemCol, qtyCol, prioCol, statusCol);
+        installCopyPasteHandler(table);
+        return table;
+    }
+
+    private TableView<Vehicle> createVehicleTable() {
+        TableView<Vehicle> table = new TableView<>();
+        table.getStyleClass().add("inventory-table");
+        table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+
+        TableColumn<Vehicle, String> idCol = new TableColumn<>("Vehicle ID");
+        idCol.setCellValueFactory(d -> new SimpleStringProperty(d.getValue().getVehicleId()));
+        idCol.getStyleClass().add("uuid-cell");
+
+        TableColumn<Vehicle, String> plateCol = new TableColumn<>("License Plate");
+        plateCol.setCellValueFactory(d -> new SimpleStringProperty(d.getValue().getLicensePlate()));
+        plateCol.getStyleClass().add("sku-cell");
+
+        TableColumn<Vehicle, String> capCol = new TableColumn<>("Capacity");
+        capCol.setCellValueFactory(d -> new SimpleStringProperty(String.valueOf(d.getValue().getCapacity())));
+        capCol.getStyleClass().add("qty-cell");
+
+        TableColumn<Vehicle, String> statusCol = new TableColumn<>("Status");
+        statusCol.setCellValueFactory(d -> new SimpleStringProperty(d.getValue().getStatus().toString()));
+
+        table.getColumns().addAll(idCol, plateCol, capCol, statusCol);
+        installCopyPasteHandler(table);
+        return table;
+    }
+
+    private TableView<Shipment> createShipmentTable() {
+        TableView<Shipment> table = new TableView<>();
+        table.getStyleClass().add("inventory-table");
+        table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+
+        TableColumn<Shipment, String> idCol = new TableColumn<>("Shipment ID");
+        idCol.setCellValueFactory(d -> new SimpleStringProperty(d.getValue().getShipmentId()));
+        idCol.getStyleClass().add("uuid-cell");
+
+        TableColumn<Shipment, String> vehicleCol = new TableColumn<>("Vehicle Plate");
+        vehicleCol.setCellValueFactory(d -> new SimpleStringProperty(d.getValue().getVehicleLicensePlate()));
+
+        TableColumn<Shipment, String> driverCol = new TableColumn<>("Driver");
+        driverCol.setCellValueFactory(d -> new SimpleStringProperty(d.getValue().getDriverName()));
+
+        TableColumn<Shipment, String> statusCol = new TableColumn<>("Status");
+        statusCol.setCellValueFactory(d -> new SimpleStringProperty(d.getValue().getStatus().toString()));
+
+        table.getColumns().addAll(idCol, vehicleCol, driverCol, statusCol);
+        installCopyPasteHandler(table);
+        return table;
+    }
+
+    // --- REUSABLE UTILITIES ---
+
+    private void installCopyPasteHandler(TableView<?> table) {
+        // Enable cell-level selection instead of row-level
+        table.getSelectionModel().setCellSelectionEnabled(true);
+        table.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
+
+        // Add keyboard shortcut listener for Copy (Ctrl+C / Cmd+C)
+        table.setOnKeyPressed(event -> {
+            KeyCodeCombination copyShortcut = new KeyCodeCombination(KeyCode.C, KeyCombination.SHORTCUT_DOWN);
+            if (copyShortcut.match(event)) {
+                // By using a wildcard list and explicit casts inside the loop, we avoid
+                // strict Maven type-checking compilation failures.
+                List<?> selectedCells = table.getSelectionModel().getSelectedCells();
+                if (selectedCells.isEmpty()) return;
+
+                StringBuilder clipboardString = new StringBuilder();
+                int prevRow = -1;
+                
+                for (Object cellObj : selectedCells) {
+                    TablePosition<?, ?> pos = (TablePosition<?, ?>) cellObj;
+                    
+                    // Add newline if we moved to a new row, else add tab if moving columns
+                    if (prevRow != -1 && prevRow != pos.getRow()) {
+                        clipboardString.append("\n");
+                    } else if (prevRow != -1) {
+                        clipboardString.append("\t");
+                    }
+                    
+                    Object value = pos.getTableColumn().getCellData(pos.getRow());
+                    clipboardString.append(value == null ? "" : value.toString());
+                    prevRow = pos.getRow();
+                }
+
+                // Push to system clipboard
+                ClipboardContent content = new ClipboardContent();
+                content.putString(clipboardString.toString());
+                Clipboard.getSystemClipboard().setContent(content);
+            }
+        });
     }
 
     private Button actionButton(String label, javafx.event.EventHandler<javafx.event.ActionEvent> handler) {
@@ -418,32 +654,12 @@ public class RouteXDashboard {
         return button;
     }
 
-    private void bindOutputContext(HBox actions, TextArea output) {
-        actions.getChildren().filtered(node -> node instanceof Button).forEach(node -> {
-            Button button = (Button) node;
-            switch (button.getText()) {
-                case "List" -> button.setOnAction(e -> output.setText(formatInventory(inventoryService.getAllItems())));
-                case "Below Threshold" -> button.setOnAction(e -> output.setText(formatInventory(inventoryService.getItemsBelowThreshold())));
-                case "List Pending" -> button.setOnAction(e -> output.setText(formatOrders(shipmentOrderService.getPendingOrders())));
-                case "List Approved" -> button.setOnAction(e -> output.setText(formatOrders(shipmentOrderService.getApprovedOrders())));
-                case "Approved Orders" -> button.setOnAction(e -> output.setText(formatOrders(shipmentOrderService.getApprovedOrders())));
-                case "Vehicles" -> button.setOnAction(e -> output.setText(formatVehicles(vehicleService.getAllVehicles())));
-                case "Shipments" -> button.setOnAction(e -> output.setText(formatShipments(shipmentService.getAllShipments())));
-                case "My Shipments" -> button.setOnAction(e -> output.setText(formatShipments(shipmentService.getShipmentsForDriver(currentUser.getUserId()))));
-            }
-        });
-    }
-
     private Node buildFooter(String message) {
         Label footer = new Label(message);
         footer.getStyleClass().add("footer-text");
         footer.setPadding(new Insets(10, 18, 16, 18));
         footer.setTextAlignment(TextAlignment.CENTER);
         return footer;
-    }
-
-    private void showUsers() {
-        showAlert(Alert.AlertType.INFORMATION, "Users", formatUsers(userManagementService.getAllUsers()));
     }
 
     private void createUser() {
@@ -617,75 +833,6 @@ public class RouteXDashboard {
         if (execute(() -> vehicleService.reportIssue(vehicleId.get(), currentUser.getUserId(), description.get(), category.get(), gps.get(), currentUser.getUserId()))) {
             showAlert(Alert.AlertType.INFORMATION, "Success", "Vehicle issue reported.");
         }
-    }
-
-    private String formatUsers(List<User> users) {
-        StringBuilder sb = new StringBuilder();
-        for (User user : users) {
-            sb.append(user.getUserId()).append(" | ").append(user.getName())
-              .append(" | ").append(user.getEmail())
-              .append(" | ").append(user.getRole())
-              .append(" | ").append(user.getStatus())
-              .append('\n');
-        }
-        return sb.toString();
-    }
-
-    private String formatInventory(List<InventoryItem> items) {
-        StringBuilder sb = new StringBuilder();
-        for (InventoryItem item : items) {
-            sb.append(item.getItemId()).append(" | ").append(item.getSku())
-              .append(" | ").append(item.getName())
-              .append(" | qty=").append(item.getQuantity())
-              .append(" | threshold=").append(item.getReorderThreshold())
-              .append(" | warehouse=").append(item.getWarehouseName())
-              .append('\n');
-        }
-        return sb.toString();
-    }
-
-    private String formatOrders(List<ShipmentOrder> orders) {
-        StringBuilder sb = new StringBuilder();
-        for (ShipmentOrder order : orders) {
-            sb.append(order.getOrderId()).append(" | ").append(order.getItemName())
-              .append(" | qty=").append(order.getRequiredQty())
-              .append(" | priority=").append(order.getPriority())
-              .append(" | status=").append(order.getStatus())
-              .append('\n');
-        }
-        return sb.toString();
-    }
-
-    private String formatVehicles(List<Vehicle> vehicles) {
-        StringBuilder sb = new StringBuilder();
-        for (Vehicle vehicle : vehicles) {
-            sb.append(vehicle.getVehicleId()).append(" | ").append(vehicle.getLicensePlate())
-              .append(" | capacity=").append(vehicle.getCapacity())
-              .append(" | status=").append(vehicle.getStatus())
-              .append('\n');
-        }
-        return sb.toString();
-    }
-
-    private String formatShipments(List<Shipment> shipments) {
-        StringBuilder sb = new StringBuilder();
-        for (Shipment shipment : shipments) {
-            sb.append(shipment.getShipmentId()).append(" | vehicle=").append(shipment.getVehicleLicensePlate())
-              .append(" | driver=").append(shipment.getDriverName())
-              .append(" | status=").append(shipment.getStatus())
-              .append('\n');
-        }
-        return sb.toString();
-    }
-
-    private String formatDriverSnapshot() {
-        return formatShipments(shipmentService.getShipmentsForDriver(currentUser.getUserId())) + "\n\nReport vehicle issues from this screen after selecting one of your assigned vehicles.";
-    }
-
-    private String formatDispatchSnapshot() {
-        return "Approved Orders\n\n" + formatOrders(shipmentOrderService.getApprovedOrders()) +
-               "\nAvailable Vehicles\n\n" + formatVehicles(vehicleService.getEligibleVehicles()) +
-               "\nAll Shipments\n\n" + formatShipments(shipmentService.getAllShipments());
     }
 
     private Optional<String> promptText(String title, String header, String content) {
